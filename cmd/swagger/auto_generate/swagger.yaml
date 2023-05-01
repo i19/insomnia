@@ -1,0 +1,122 @@
+definitions:
+  errors.ErrorCode:
+    enum:
+    - 0
+    - 400
+    - 401
+    - 402
+    - 500
+    type: integer
+    x-enum-varnames:
+    - OK
+    - BadRequest
+    - Unauthorized
+    - Forbidden
+    - InternalServerError
+  handler.RequestForPostByProjectID:
+    properties:
+      rule:
+        type: string
+    type: object
+  handler.RequestForValidate:
+    properties:
+      spec:
+        type: string
+    type: object
+  handler.ResponseProtocol:
+    properties:
+      code:
+        allOf:
+        - $ref: '#/definitions/errors.ErrorCode'
+        description: business code, 0 means ok
+      data:
+        description: result
+      message:
+        description: error message
+        type: string
+    type: object
+  rule_engine.ValidationResult:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      isValid:
+        type: boolean
+    type: object
+info:
+  contact: {}
+paths:
+  /api/linting_rule/{project_id}:
+    post:
+      consumes:
+      - application/json
+      description: If there is admin grant, allow creating or updating linting rules,
+        otherwise not allowed
+      parameters:
+      - description: unique ID for a project
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - description: session token
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: custom linting rule in yaml
+        in: body
+        name: '{object}'
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RequestForPostByProjectID'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ResponseProtocol'
+      summary: Update linting rules by project id
+      tags:
+      - LintingRule
+  /api/linting_rule/{project_id}/validate:
+    post:
+      consumes:
+      - application/json
+      description: Validate spec with linting rule for the project
+      parameters:
+      - description: unique ID for a project
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - description: session token
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: 'Specification to be validated '
+        in: body
+        name: '{object}'
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RequestForValidate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: validate result
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseProtocol'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/rule_engine.ValidationResult'
+                  type: array
+              type: object
+      summary: Validate spec
+      tags:
+      - LintingRule
+swagger: "2.0"
